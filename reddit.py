@@ -1,24 +1,37 @@
 import asyncpraw
+import asyncio
 import re
 
 from settings import REDDIT_CLIENT_ID, REDDIT_CLIENT_SECRET
 
 
 class RedditConnection(object):
+    # Static factory method
+    @classmethod
+    async def get_connection(cls) -> "RedditConnection":
+        connection = cls()
+        connection._subreddit = await connection._client.subreddit("UkrainianConflict")
+        return connection
 
+    # Constructor
     def __init__(self) -> None:
         self._client = asyncpraw.Reddit(
             client_id=REDDIT_CLIENT_ID,
             client_secret=REDDIT_CLIENT_SECRET,
             user_agent="monitorbot v0.1"
         )
-        self._subredit = self._client.subreddit("UkrainianConflict")
+        # self._subredit = self._client.subreddit("UkrainianConflict")
+        self._subreddit = None
     
-    def get_top_n(self, n: int, skip_twitter: bool = True) -> list["asyncpraw.models.Submission"]:
-        submissions = []
+    # For avoiding aiohttp "Unclosed client session" errors
+    async def dispose(self):
+        await self._client.close()
+    
+    async def get_top_n(self, n: int, skip_twitter: bool = True) -> list["asyncpraw.models.Submission"]:
+        submissions = list()
         count = 0
         query_limit = max(6, 3 * n)
-        posts = list(self._subredit.hot(limit=query_limit))
+        posts = [post async for post in self._subreddit.hot(limit=query_limit)]
         index = 0
         while count < n and index < query_limit:
             post = posts[index]
@@ -34,7 +47,7 @@ class RedditConnection(object):
         try_n = n
         while len(submissions) == 0:
             try_n *= 3
-            submissions = self.get_top_n(try_n)
+            submissions = await self.get_top_n(try_n)
 
         return submissions[:n]
     
@@ -50,12 +63,12 @@ class RedditConnection(object):
             return False
 
 
-def test():
-    reddit = RedditConnection()
-
-    for post in reddit.get_top_n(3):
+async def test():
+    reddit = await RedditConnection.get_connection()
+    for post in await reddit.get_top_n(3):
         print(post.url, "\n")
+    await reddit.dispose()
 
 
 if __name__ == "__main__":
-    test()
+    asyncio.run(test())
