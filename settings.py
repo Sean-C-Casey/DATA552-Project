@@ -6,6 +6,7 @@ load_dotenv()
 
 # Discord stuff
 BOT_TOKEN = os.getenv("BOT_TOKEN")
+UPDATE_INTERVAL = os.getenv("UPDATE_INTERVAL", 24)  # Note: this is in hours!
 
 # Reddit stuff
 REDDIT_CLIENT_ID = os.getenv("REDDIT_CLIENT_ID")
