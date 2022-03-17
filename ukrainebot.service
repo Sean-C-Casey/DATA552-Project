@@ -1,0 +1,14 @@
+[Unit]
+Description=Discord bot for sending Ukraine-Russia war news updates
+After=network.target
+StartLimitIntervalSec=0
+
+[Service]
+Type=simple
+Restart=always
+RestartSec=1
+User=scasey
+ExecStart=/appdev/UkraineBot/venv/bin/python /appdev/UkraineBot/bot.py
+
+[Install]
+WantedBy=multi-user.target
